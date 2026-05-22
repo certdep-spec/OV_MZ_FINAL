@@ -1,0 +1,32 @@
+{
+  "RegistryDialog": {
+    "w": 1283,
+    "h": 780,
+    "x": -4,
+    "y": 5
+  },
+  "ClientSelectorDialog": {
+    "w": 525,
+    "h": 600,
+    "x": 378,
+    "y": 100
+  },
+  "DateRangeDialog": {
+    "x": 26,
+    "y": 26,
+    "w": 570,
+    "h": 420
+  },
+  "ApplicantsManagerDialog": {
+    "w": 800,
+    "h": 500,
+    "x": 26,
+    "y": 26
+  },
+  "ApplicantEditDialog": {
+    "w": 450,
+    "h": 400,
+    "x": 52,
+    "y": 52
+  }
+}

@@ -1,0 +1,25 @@
+# Codecov configuration
+codecov:
+  require_ci_to_pass: false
+
+coverage:
+  status:
+    project:
+      default:
+        target: 55%
+        threshold: 2%
+    patch:
+      default:
+        target: 70%
+        threshold: 5%
+
+ignore:
+  - "tests/"
+  - "**/__pycache__/"
+  - "**/*.pyc"
+  - "gui/"  # GUI tests are complex, skip for now
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: true

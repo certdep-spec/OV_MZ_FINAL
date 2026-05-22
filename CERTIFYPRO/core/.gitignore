@@ -1,0 +1,95 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+gui/__pycache__/
+gui/widgets/__pycache__/
+services/__pycache__/
+models/__pycache__/
+database/__pycache__/
+documents/__pycache__/
+tests/__pycache__/
+
+# ===== Virtual Environment =====
+.venv/
+venv/
+env/
+ENV/
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===== Testing =====
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== Logs =====
+*.log
+logs/*.log
+
+# ===== Database =====
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# ===== Generated Documents =====
+data/Documents/
+documents/output/
+
+# ===== Generated/Excel exports in root =====
+*.xlsm
+*.xlsx
+*.xls
+Заявка_*.xlsm
+Заявка_*.xlsx
+Заявка_*.docx
+
+# ===== Temporary/Trash =====
+MUSOR/
+MUSOR*/
+temp/
+tmp/
+
+# ===== Legacy VBA Files =====
+*.frm
+*.frm.txt
+*.frx
+*.frx.txt
+*.cls
+*.bas
+legacy/
+
+# ===== Config/State =====
+config/window_geometry.json
+
+# ===== Qwen / AI =====
+.qwen/
+.aider*
+
+# ===== PyInstaller =====
+*.spec
+build/
+dist/
+
+# ===== Poetry =====
+poetry.lock

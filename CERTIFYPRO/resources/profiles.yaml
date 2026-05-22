@@ -1,0 +1,58 @@
+clients:
+  afina:
+    name: АФІНА
+    display_name: ТОВ «АФІНА-ГРУП»
+    template_suffix: _А
+    launcher_mapping: АФІНА
+    company:
+      name: ТОВ «АФІНА-ГРУП»
+      code: '33324489'
+      director: А. О. Жован
+    features:
+      import_product: false
+      ugoda_templates: 1
+    data_dir: data/АФІНА
+    description: Клієнт АФІНА - вітчизняна продукція
+  johnson:
+    name: ДЖОНСОН
+    display_name: ТОВ "СК ДЖОНСОН»
+    template_suffix: _Д
+    launcher_mapping: ДЖОНСОН
+    company:
+      name: ТОВ "СК ДЖОНСОН»
+      code: '00146137'
+      director: К.Я. Шевчук
+    features:
+      import_product: true
+      ugoda_templates: 2
+    data_dir: data/ДЖОНСОН
+    description: Клієнт ДЖОНСОН - вітчизняна та імпортна продукція
+  procter:
+    name: PROCTER
+    display_name: ТОВ «Проктер енд Гембл Україна»
+    template_suffix: _П
+    launcher_mapping: PROCTER
+    company:
+      name: ТОВ «Проктер енд Гембл Україна»
+      code: '19341005'
+      director: О.Л. Косінова
+    features:
+      import_product: false
+      ugoda_templates: 1
+    data_dir: data/PROCTER
+    description: Клієнт PROCTER (авто-створено)
+global:
+  version: 3.1.0
+  app_name: CertifyPro
+  appearance_mode: dark
+  color_theme: blue
+  date_format: '%d.%m.%Y'
+  file_date_format: '%Y-%m-%d'
+  datetime_format: '%d.%m.%Y %H:%M'
+  font_family: Times New Roman
+  font_size: 10
+  language: uk
+  max_parties_per_app: 100
+  min_app_number: 1
+  max_app_number: 999
+  reg_number_prefix: '114'

@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+.flake8
+
+# PyInstaller
+*.manifest
+*.spec.bak
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node.js (MCP server)
+node_modules/
+package-lock.json
+
+# Logs
+logs/*.log
+*.log
+
+# Generated documents
+data/*/Documents/
+data/АФІНА/
+data/ДЖОНСОН/
+data/PROCTER/
+
+# Database (client data)
+data/*/certify.db
+data/applicants.db
+
+# Config (may contain secrets)
+.env
+*.ini
+
+# Build artifacts
+Дистрибутив/
+CertifyPro_v3.1/
+
+# Temporary
+*.tmp
+*.bak
+output.txt
+dummy_out/
+scratch/
+
+# AI assistants
+.aider*
+.claude/
+.kilocode/
+.qwen/

@@ -1,0 +1,26 @@
+# Залежності для розробки CertifyPro
+
+# Форматування коду
+black>=23.0.0
+isort>=5.12.0
+
+# Лінтер
+flake8>=6.0.0
+flake8-bugbear>=23.0.0
+flake8-comprehensions>=3.14.0
+flake8-simplify>=0.19.0
+
+# Типізація
+mypy>=1.0.0
+types-setuptools
+
+# Тестування
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+
+# Pre-commit хуки
+pre-commit>=3.0.0
+
+# Додаткові інструменти
+ipython>=8.0.0
