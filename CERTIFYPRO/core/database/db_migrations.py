@@ -9,6 +9,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+
 def migrate_db(db_path: Path) -> None:
     """
     Виконує міграцію бази даних до останньої версії (v3).
@@ -22,20 +23,24 @@ def migrate_db(db_path: Path) -> None:
     logger.info(f"🚀 Запуск міграції для БД: {db_path}")
     conn = sqlite3.connect(str(db_path))
     cursor = conn.cursor()
-    
+
     try:
         # 1. Перевіряємо поточну версію схеми
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'")
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'"
+        )
         if not cursor.fetchone():
             # Якщо таблиці версій немає, створюємо її
             cursor.execute("CREATE TABLE schema_version (version INTEGER PRIMARY KEY)")
-            
+
             # Визначаємо поточний стан (чи є is_import)
             cursor.execute("PRAGMA table_info(parties)")
             parties_cols = [col[1] for col in cursor.fetchall()]
-            
+
             initial_version = 2 if "is_import" in parties_cols else 1
-            cursor.execute("INSERT INTO schema_version (version) VALUES (?)", (initial_version,))
+            cursor.execute(
+                "INSERT INTO schema_version (version) VALUES (?)", (initial_version,)
+            )
             conn.commit()
             logger.info(f"Ініціалізовано версію схеми як v{initial_version}")
 
@@ -45,19 +50,25 @@ def migrate_db(db_path: Path) -> None:
 
         # ===== МІГРАЦІЯ v1 -> v2 (Додавання колонки is_import) =====
         if current_version < 2:
-            logger.info("🔧 Міграція v1 -> v2: додавання колонки is_import в таблицю parties...")
+            logger.info(
+                "🔧 Міграція v1 -> v2: додавання колонки is_import в таблицю parties..."
+            )
             cursor.execute("PRAGMA table_info(parties)")
             parties_cols = [col[1] for col in cursor.fetchall()]
             if "is_import" not in parties_cols:
-                cursor.execute("ALTER TABLE parties ADD COLUMN is_import INTEGER DEFAULT 0")
+                cursor.execute(
+                    "ALTER TABLE parties ADD COLUMN is_import INTEGER DEFAULT 0"
+                )
             cursor.execute("UPDATE schema_version SET version = 2")
             conn.commit()
             logger.info("✅ Успішно оновлено до версії v2")
 
         # ===== МІГРАЦІЯ v2 -> v3 (Унікальний індекс на ingredients) =====
         if current_version < 3:
-            logger.info("🔧 Міграція v2 -> v3: додавання UNIQUE(product_name, version, chemical_name)...")
-            
+            logger.info(
+                "🔧 Міграція v2 -> v3: додавання UNIQUE(product_name, version, chemical_name)..."
+            )
+
             # А. Видаляємо дублікати інгредієнтів перед створенням UNIQUE
             logger.info("  1/4 Очищення дублікатів інгредієнтів...")
             cursor.execute("""
@@ -68,15 +79,17 @@ def migrate_db(db_path: Path) -> None:
                     GROUP BY product_name, COALESCE(version, ''), COALESCE(chemical_name, '')
                 )
             """)
-            
+
             # Б. Перевіряємо чи є вже UNIQUE в структурі таблиці
-            cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='ingredients'")
+            cursor.execute(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name='ingredients'"
+            )
             create_sql = cursor.fetchone()[0]
-            
+
             if "UNIQUE" not in create_sql:
                 logger.info("  2/4 Перебудова таблиці ingredients...")
                 cursor.execute("ALTER TABLE ingredients RENAME TO ingredients_old")
-                
+
                 cursor.execute("""
                     CREATE TABLE ingredients (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,30 +103,184 @@ def migrate_db(db_path: Path) -> None:
                         UNIQUE(product_name, version, chemical_name)
                     )
                 """)
-                
+
                 logger.info("  3/4 Копіювання даних...")
                 # Динамічно визначаємо які колонки існують в старій таблиці
                 cursor.execute("PRAGMA table_info(ingredients_old)")
                 old_cols = [col[1] for col in cursor.fetchall()]
-                
+
                 # Всі можливі колонки в новій таблиці (крім id — він AUTOINCREMENT)
-                all_cols = ["id", "product_name", "version", "chemical_name", "trade_mark", "cas_number", "certificate"]
+                all_cols = [
+                    "id",
+                    "product_name",
+                    "version",
+                    "chemical_name",
+                    "trade_mark",
+                    "cas_number",
+                    "certificate",
+                ]
                 # Беремо тільки ті, що є в старій таблиці
                 cols_to_copy = [c for c in all_cols if c in old_cols]
                 cols_str = ", ".join(cols_to_copy)
-                
-                cursor.execute(f"INSERT INTO ingredients ({cols_str}) SELECT {cols_str} FROM ingredients_old")
-                
+
+                cursor.execute(
+                    f"INSERT INTO ingredients ({cols_str}) SELECT {cols_str} FROM ingredients_old"
+                )
+
                 logger.info("  4/4 Очищення тимчасової таблиці...")
                 cursor.execute("DROP TABLE ingredients_old")
             else:
-                logger.info("  Обмеження UNIQUE вже існує в таблиці ingredients, перенос не потрібен.")
+                logger.info(
+                    "  Обмеження UNIQUE вже існує в таблиці ingredients, перенос не потрібен."
+                )
 
             cursor.execute("UPDATE schema_version SET version = 3")
             conn.commit()
             logger.info("✅ Успішно оновлено до версії v3")
 
-        logger.info(f"🎉 Міграція завершена! БД {db_path.name} знаходиться в актуальному стані (v3).")
+        # ===== МІГРАЦІЯ v3 -> v4 (Композитний UNIQUE(name, tu_code) для products) =====
+        if current_version < 4:
+            logger.info(
+                "🔧 Міграція v3 -> v4: зміна UNIQUE(name) на UNIQUE(name, tu_code)..."
+            )
+
+            # ВАЖЛИВО: порядок має значення!
+            # SQLite при ALTER TABLE ... RENAME автоматично оновлює FK-посилання
+            # дочірніх таблиць на нове ім'я батьківської. Якщо спершу перейменувати
+            # products, FK з ingredients почне вказувати на products_old і після
+            # його DROP залишиться «висячим». Тому СПОЧАТКУ видаляємо FK з ingredients,
+            # і ЛИШЕ ПОТІМ перебудовуємо products.
+
+            # А. Перебудова таблиці ingredients (видалення FK на products(name),
+            #    оскільки name більше не буде UNIQUE)
+            cursor.execute(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name='ingredients'"
+            )
+            ing_row = cursor.fetchone()
+            ing_sql = ing_row[0] if ing_row else ""
+
+            if "FOREIGN KEY" in ing_sql:
+                logger.info("  1/3 Очищення дублікатів ingredients...")
+                cursor.execute("""
+                    DELETE FROM ingredients
+                    WHERE id NOT IN (
+                        SELECT MIN(id)
+                        FROM ingredients
+                        GROUP BY product_name, COALESCE(version, ''), COALESCE(chemical_name, '')
+                    )
+                """)
+
+                logger.info("  2/3 Перебудова таблиці ingredients без FK...")
+                cursor.execute("ALTER TABLE ingredients RENAME TO ingredients_old")
+
+                cursor.execute("""
+                    CREATE TABLE ingredients (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        product_name TEXT NOT NULL,
+                        version TEXT,
+                        chemical_name TEXT,
+                        trade_mark TEXT,
+                        cas_number TEXT,
+                        certificate TEXT,
+                        UNIQUE(product_name, version, chemical_name)
+                    )
+                """)
+
+                cursor.execute("""
+                    INSERT INTO ingredients (id, product_name, version, chemical_name, trade_mark, cas_number, certificate)
+                    SELECT id, product_name, version, chemical_name, trade_mark, cas_number, certificate
+                    FROM ingredients_old
+                """)
+
+                logger.info("  3/3 Очищення тимчасової таблиці...")
+                cursor.execute("DROP TABLE ingredients_old")
+            else:
+                logger.info(
+                    "  FK вже видалено з таблиці ingredients, перенос не потрібен."
+                )
+
+            # Б. Перебудова таблиці products
+            cursor.execute(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name='products'"
+            )
+            row = cursor.fetchone()
+            products_sql = row[0] if row else ""
+
+            if "UNIQUE(name, tu_code)" not in products_sql:
+                logger.info("  1/4 Очищення дублікатів products...")
+                cursor.execute("PRAGMA table_info(products)")
+                products_cols = [col[1] for col in cursor.fetchall()]
+                has_tu_code = "tu_code" in products_cols
+
+                if has_tu_code:
+                    cursor.execute("""
+                        DELETE FROM products
+                        WHERE id NOT IN (
+                            SELECT MIN(id)
+                            FROM products
+                            GROUP BY name, COALESCE(tu_code, '')
+                        )
+                    """)
+                else:
+                    cursor.execute("""
+                        DELETE FROM products
+                        WHERE id NOT IN (
+                            SELECT MIN(id)
+                            FROM products
+                            GROUP BY name
+                        )
+                    """)
+
+                logger.info("  2/4 Перебудова таблиці products...")
+                cursor.execute("ALTER TABLE products RENAME TO products_old")
+
+                cursor.execute("""
+                    CREATE TABLE products (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT NOT NULL,
+                        tu_code TEXT DEFAULT '',
+                        shelf_life_months INTEGER DEFAULT 36,
+                        dkpp_code TEXT DEFAULT '20.41.32-50.00',
+                        uktzed_code TEXT DEFAULT '3402',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(name, tu_code)
+                    )
+                """)
+
+                logger.info("  3/4 Копіювання даних products...")
+                cursor.execute("PRAGMA table_info(products_old)")
+                old_cols = [col[1] for col in cursor.fetchall()]
+                all_cols = [
+                    "id",
+                    "name",
+                    "tu_code",
+                    "shelf_life_months",
+                    "dkpp_code",
+                    "uktzed_code",
+                    "created_at",
+                ]
+                cols_to_copy = [c for c in all_cols if c in old_cols]
+                cols_str = ", ".join(cols_to_copy)
+
+                cursor.execute(f"""
+                    INSERT INTO products ({cols_str})
+                    SELECT {cols_str} FROM products_old
+                """)
+
+                logger.info("  4/4 Очищення тимчасової таблиці...")
+                cursor.execute("DROP TABLE products_old")
+            else:
+                logger.info(
+                    "  Обмеження UNIQUE(name, tu_code) вже існує в таблиці products, перенос не потрібен."
+                )
+
+            cursor.execute("UPDATE schema_version SET version = 4")
+            conn.commit()
+            logger.info("✅ Успішно оновлено до версії v4")
+
+        logger.info(
+            f"🎉 Міграція завершена! БД {db_path.name} знаходиться в актуальному стані (v{current_version if current_version >= 4 else 4})."
+        )
 
     except Exception as e:
         conn.rollback()
