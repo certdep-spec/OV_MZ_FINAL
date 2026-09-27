@@ -61,6 +61,11 @@ data/applicants.db
 # Build artifacts
 Дистрибутив/
 CertifyPro_v3.1/
+CERTIFYPRO/CertifyPro_v3.0_Client.zip
+CERTIFYPRO/CertifyPro_v3.*_Client.zip
+*.zip
+CERTIFYPRO/projects/*/dist/
+CERTIFYPRO/projects/*/build/
 
 # Temporary
 *.tmp
